@@ -273,5 +273,54 @@ def api_profile(username):
         "total_won": s["won"],
         "total_lost": s["lost"]
     })
+    @app.route("/api/inventory/<username>")
+def api_inventory(username):
+    c = db()
+
+    user = c.execute("""
+        SELECT id FROM users
+        WHERE username = ?
+    """, (username,)).fetchone()
+
+    if not user:
+        c.close()
+        return jsonify({"error": "Usuário não encontrado"}), 404
+
+    items = c.execute("""
+        SELECT b.emoji, b.name, b.rarity
+        FROM inventory i
+        JOIN badges b ON b.id = i.badge_id
+        WHERE i.user_id = ?
+    """, (user["id"],)).fetchall()
+
+    c.close()
+
+    return jsonify([
+        {
+            "emoji": i["emoji"],
+            "name": i["name"],
+            "rarity": i["rarity"]
+        }
+        for i in items
+    ])
+@app.route("/api/balance/<username>")
+def api_balance(username):
+    c = db()
+
+    user = c.execute("""
+        SELECT balance
+        FROM users
+        WHERE username = ?
+    """, (username,)).fetchone()
+
+    c.close()
+
+    if not user:
+        return jsonify({"error": "Usuário não encontrado"}), 404
+
+    return jsonify({
+        "username": username,
+        "balance": user["balance"]
+    })
 if __name__ == '__main__': init_db(); app.run(debug=True)
 else: init_db()

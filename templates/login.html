@@ -1,0 +1,1 @@
+{% extends "base.html" %}{% block content %}<section class="auth"><h1>Entrar</h1><p>Entre no cassino social Hyakkaou.</p><form method="post"><input name="username" placeholder="Usuário" required><input name="password" type="password" placeholder="Senha" required><button>Entrar</button></form><p><a href="{{url_for('register')}}">Criar conta</a></p></section>{% endblock %}

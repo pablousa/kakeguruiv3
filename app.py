@@ -220,6 +220,58 @@ def badges():
 @perm('can_badges')
 def give_badge():
     c=db(); c.execute('INSERT INTO inventory(user_id,badge_id,equipped,acquired_at) VALUES(?,?,0,?)',(int(request.form['user_id']),int(request.form['badge_id']),now())); c.commit(); c.close(); flash('Insígnia enviada.','success'); return redirect(url_for('badges'))
+from flask import jsonify
 
+@app.route("/api/ranking")
+def api_ranking():
+    c = db()
+    users = c.execute("""
+        SELECT u.username, u.balance, r.label AS role
+        FROM users u
+        JOIN roles r ON r.id = u.role_id
+        ORDER BY u.balance DESC
+        LIMIT 10
+    """).fetchall()
+    c.close()
+
+    return jsonify([
+        {
+            "username": u["username"],
+            "balance": u["balance"],
+            "role": u["role"]
+        }
+        for u in users
+    ])
+
+
+@app.route("/api/profile/<username>")
+def api_profile(username):
+    c = db()
+
+    user = c.execute("""
+        SELECT u.id, u.username, u.balance, r.label AS role
+        FROM users u
+        JOIN roles r ON r.id = u.role_id
+        WHERE u.username = ?
+    """, (username,)).fetchone()
+
+    if not user:
+        c.close()
+        return jsonify({"error": "Usuário não encontrado"}), 404
+
+    s = stats(c, user["id"])
+    c.close()
+
+    return jsonify({
+        "username": user["username"],
+        "balance": user["balance"],
+        "role": user["role"],
+        "bets": s["total"],
+        "wins": s["wins"],
+        "losses": s["losses"],
+        "winrate": s["winrate"],
+        "total_won": s["won"],
+        "total_lost": s["lost"]
+    })
 if __name__ == '__main__': init_db(); app.run(debug=True)
 else: init_db()
